@@ -26,7 +26,6 @@ export interface Conversation {
   timestamp: string;
   unreadCount: number;
   isOnline: boolean;
-  participantId: string; // Added to track the other user in the conversation
 }
 
 export interface Message {
@@ -59,6 +58,14 @@ export const apiService = {
     return response.data;
   },
 
+  createConversation: async (user1Id: string, user2Id: string) : Promise<Conversation> => {
+    const response = await apiClient.post(`/conversations`, {
+      user1Id,
+      user2Id
+    });
+    return response.data;
+  },
+
   // Get user info
   getUser: async (userId: string): Promise<User> => {
     const response = await apiClient.get(`/users/${userId}`);
@@ -68,15 +75,6 @@ export const apiService = {
   // Get all users
   getUsers: async (): Promise<User[]> => {
     const response = await apiClient.get('/users');
-    return response.data;
-  },
-
-  // Create a new conversation between two users
-  createConversation: async (user1Id: string, user2Id: string): Promise<Conversation> => {
-    const response = await apiClient.post('/conversations', {
-      user1Id,
-      user2Id
-    });
     return response.data;
   }
 };

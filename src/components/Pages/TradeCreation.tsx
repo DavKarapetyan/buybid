@@ -3,18 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
-  Plus,
   X,
   DollarSign,
   Search,
-  Filter,
-  Star,
-  CheckCircle,
-  AlertCircle,
   Send,
   Shuffle,
   Target,
-  Zap,
 } from "lucide-react";
 import { PageType, DraggedItem, TradeSlot } from "../../types";
 import { useAuth } from "../Auth/AuthContext";

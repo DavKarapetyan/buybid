@@ -34,11 +34,7 @@ function App() {
     isAuthenticated: false,
   });
 
-  const handleNavigate = (
-    page: PageType,
-    param?: string,
-    toUserId?: string
-  ) => {
+  const handleNavigate = (page: PageType, param?: string) => {
     setAppState((prev) => ({
       ...prev,
       currentPage: page,
@@ -49,7 +45,9 @@ function App() {
       selectedAuction: page === "auction-detail" && param ? param : undefined,
       selectedTrade: page === "trade" && param ? param : prev.selectedTrade,
       selectedToUser:
-        page === "chat" && toUserId ? toUserId : prev.selectedToUser,
+        (page === "chat" || page === "create-trade") && param
+          ? param
+          : prev.selectedToUser,
     }));
   };
 
@@ -149,7 +147,6 @@ function App() {
         return (
           <ChatInterface
             onNavigate={handleNavigate}
-            user1Id={appState.user?.id}
             user2Id={appState.selectedToUser}
           />
         );

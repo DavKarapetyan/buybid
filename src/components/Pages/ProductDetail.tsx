@@ -40,6 +40,7 @@ interface ProductApiResponse {
   }>;
   modelUrl?: string;
   images: string[];
+  userName: string;
 }
 
 interface ProductDetailProps {
@@ -526,7 +527,7 @@ export default function ProductDetail({
                   <div>
                     <div className="flex items-center space-x-2">
                       <h3 className="text-lg font-semibold text-gray-900">
-                        {product.createdByUserId}
+                        {product.userName}
                       </h3>
                     </div>
                   </div>

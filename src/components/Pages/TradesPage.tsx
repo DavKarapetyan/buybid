@@ -199,16 +199,6 @@ export default function TradesPage({ onNavigate }: TradesPageProps) {
             <div className="h-6 w-px bg-gray-300"></div>
             <h1 className="text-3xl font-bold text-gray-900">Trade Center</h1>
           </div>
-
-          <motion.button
-            onClick={() => onNavigate("create-trade")}
-            className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 shadow-lg"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Plus className="h-5 w-5" />
-            <span>Create Trade Offer</span>
-          </motion.button>
         </motion.div>
 
         {/* Stats Cards */}
@@ -349,12 +339,6 @@ export default function TradesPage({ onNavigate }: TradesPageProps) {
                   ? "Try adjusting your search or filter criteria"
                   : `No ${activeTab} trades yet. Start trading by creating your first offer!`}
               </p>
-              <button
-                onClick={() => onNavigate("create-trade")}
-                className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-              >
-                Create Trade Offer
-              </button>
             </motion.div>
           ) : (
             trades.map((offer, index) => (

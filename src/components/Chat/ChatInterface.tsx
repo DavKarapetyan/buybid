@@ -12,7 +12,7 @@ import { apiService, Conversation, Message } from "../../services/apiService";
 import { useAuth } from "../Auth/AuthContext";
 
 interface ChatInterfaceProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, param?: string) => void;
   user2Id?: string;
 }
 
@@ -35,7 +35,6 @@ export default function ChatInterface({
   >("connecting");
   const { user } = useAuth();
   const CURRENT_USER_ID = user?.id;
-
   const user1Id = CURRENT_USER_ID;
 
   // Ref for auto-scrolling
@@ -46,11 +45,10 @@ export default function ChatInterface({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Load or create conversation
-  const loadOrCreateConversation = useCallback(async () => {
+  // Load conversations - removed selectedChat dependency to avoid circular updates
+  const loadConversations = useCallback(async () => {
     if (!CURRENT_USER_ID) {
       console.warn("Cannot load conversations: missing userId");
-      setLoading(false);
       return;
     }
 
@@ -58,45 +56,45 @@ export default function ChatInterface({
       const data = await apiService.getConversations(CURRENT_USER_ID);
       console.log(`Loaded ${data.length} conversations:`, data);
       setConversations(data);
-
-      // If user1Id and user2Id are provided, try to find or create conversation
-      if (user1Id && user2Id) {
-        const targetConversation = data.find(
-          (conv) =>
-            (conv.user.id === user1Id && conv.participantId === user2Id) ||
-            (conv.user.id === user2Id && conv.participantId === user1Id)
-        );
-
-        if (targetConversation) {
-          console.log(`Found existing conversation: ${targetConversation.id}`);
-          setSelectedChat(targetConversation.id);
-        } else {
-          try {
-            console.log(
-              `Creating new conversation between ${user1Id} and ${user2Id}`
-            );
-            const newConversation = await apiService.createConversation(
-              user1Id,
-              user2Id
-            );
-            console.log(`Created new conversation: ${newConversation.id}`);
-            setConversations((prev) => [...prev, newConversation]);
-            setSelectedChat(newConversation.id);
-          } catch (error) {
-            console.error("Failed to create conversation:", error);
-          }
-        }
-      } else if (data.length > 0) {
-        // If no user IDs provided, select first conversation
-        console.log("No user IDs provided, selecting first conversation");
-        setSelectedChat(data[0].id);
-      }
+      return data; // Return data for use in other functions
     } catch (error) {
       console.error("Failed to load conversations:", error);
-    } finally {
-      setLoading(false);
+      return [];
     }
-  }, [CURRENT_USER_ID, user1Id, user2Id]);
+  }, [CURRENT_USER_ID]);
+
+  // Handle user2Id conversation creation/selection
+  const handleUser2IdConversation = useCallback(async () => {
+    if (!user2Id || !user1Id) return;
+
+    try {
+      // First load conversations
+      const data = await loadConversations();
+
+      // Look for existing conversation
+      const targetConversation = data.find(
+        (conv) => conv.user.id === user1Id || conv.user.id === user2Id
+      );
+
+      if (targetConversation) {
+        console.log("Found existing conversation:", targetConversation.id);
+        setSelectedChat(targetConversation.id);
+      } else {
+        console.log("Creating new conversation with user2Id:", user2Id);
+        const newConversation = await apiService.createConversation(
+          user1Id,
+          user2Id
+        );
+        console.log("Created new conversation:", newConversation);
+
+        // Reload conversations to get the fresh list
+        await loadConversations();
+        setSelectedChat(newConversation.id);
+      }
+    } catch (error) {
+      console.error("Failed to handle user2Id conversation:", error);
+    }
+  }, [user2Id, user1Id, loadConversations]);
 
   // Load messages for selected conversation
   const loadMessages = useCallback(
@@ -121,7 +119,7 @@ export default function ChatInterface({
         setMessages(data);
       } catch (error) {
         console.error("Failed to load messages:", error);
-        setMessages([]);
+        setMessages([]); // Clear messages on error
       } finally {
         setLoadingMessages(false);
       }
@@ -158,7 +156,7 @@ export default function ChatInterface({
       };
 
       setMessages((prev) => [...prev, receivedMessage]);
-      loadOrCreateConversation();
+      loadConversations(); // Reload conversations to update last message
     });
 
     newConnection.onclose((error) => {
@@ -200,15 +198,34 @@ export default function ChatInterface({
         newConnection.stop();
       }
     };
-  }, [CURRENT_USER_ID, loadOrCreateConversation]);
+  }, [CURRENT_USER_ID, loadConversations]);
 
-  // Load conversations on mount
+  // Initial load of conversations
   useEffect(() => {
-    if (CURRENT_USER_ID) {
-      loadOrCreateConversation();
-    }
-  }, [CURRENT_USER_ID, loadOrCreateConversation]);
+    const initializeConversations = async () => {
+      if (!CURRENT_USER_ID) return;
 
+      try {
+        const data = await loadConversations();
+
+        // Handle user2Id if provided
+        if (user2Id) {
+          await handleUser2IdConversation();
+        } else if (data.length > 0 && !selectedChat) {
+          // Auto-select first conversation if none selected
+          setSelectedChat(data[0].id);
+        }
+      } catch (error) {
+        console.error("Failed to initialize conversations:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeConversations();
+  }, [CURRENT_USER_ID, user2Id]); // Removed loadConversations and handleUser2IdConversation from dependencies
+
+  // Handle scroll to top when loading is complete
   useEffect(() => {
     if (!loading) {
       window.scrollTo({ top: 0, behavior: "auto" });
@@ -261,11 +278,12 @@ export default function ChatInterface({
     if (!messageText.trim() || !selectedChat || !CURRENT_USER_ID) return;
 
     const text = messageText.trim();
-    setMessageText("");
+    setMessageText(""); // Clear input immediately
 
     try {
       console.log(`Sending message to conversation ${selectedChat}: ${text}`);
 
+      // Use SignalR to send message
       if (connection && connectionStatus === "connected") {
         await connection.invoke(
           "SendMessage",
@@ -275,6 +293,7 @@ export default function ChatInterface({
         );
         console.log("Message sent via SignalR");
 
+        // Add message to local state immediately for better UX
         const tempMessage: Message = {
           id: `temp-${Date.now()}`,
           senderId: CURRENT_USER_ID,
@@ -285,11 +304,18 @@ export default function ChatInterface({
         setMessages((prev) => [...prev, tempMessage]);
       }
 
-      loadOrCreateConversation();
+      // Update conversations list
+      loadConversations();
     } catch (error) {
       console.error("Failed to send message:", error);
-      setMessageText(text);
+      setMessageText(text); // Re-add message text on error
     }
+  };
+
+  // Handle conversation selection
+  const handleConversationSelect = (conversationId: string) => {
+    console.log(`Selecting conversation: ${conversationId}`);
+    setSelectedChat(conversationId);
   };
 
   const selectedConversation = conversations.find((c) => c.id === selectedChat);
@@ -404,14 +430,11 @@ export default function ChatInterface({
           {conversations.map((conversation, index) => (
             <div
               key={conversation.id}
-              onClick={() => {
-                console.log(`Selecting conversation: ${conversation.id}`);
-                setSelectedChat(conversation.id);
-              }}
+              onClick={() => handleConversationSelect(conversation.id)}
               className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-all duration-200 animate-fade-in ${
                 selectedChat === conversation.id
                   ? "bg-primary-50 border-r-2 border-r-primary-500"
-                  : " "
+                  : ""
               }`}
               style={{
                 animationDelay: `${index * 100}ms`,
