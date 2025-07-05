@@ -300,24 +300,27 @@ export default function TradeCreation({
       : 0;
 
     try {
-      const response = await fetch("https://localhost:7207/trade", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "*/*",
-        },
-        body: JSON.stringify({
-          createTradeOfferDto: {
-            fromUserId,
-            toUserId,
-            offeredProductIds,
-            requestedProductIds,
-            message,
-            fromUserCash,
-            toUserCash,
+      const response = await fetch(
+        "https://seregamars-001-site9.ntempurl.com/trade",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "*/*",
           },
-        }),
-      });
+          body: JSON.stringify({
+            createTradeOfferDto: {
+              fromUserId,
+              toUserId,
+              offeredProductIds,
+              requestedProductIds,
+              message,
+              fromUserCash,
+              toUserCash,
+            },
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
