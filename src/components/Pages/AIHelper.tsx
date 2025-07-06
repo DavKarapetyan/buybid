@@ -95,7 +95,7 @@ export default function AIHelper({ onNavigate }: AIHelperProps) {
     const fetchProducts = async () => {
       try {
         const response = await fetch(
-          "http://lachin777-001-site1.mtempurl.com/products"
+          " https://seregamars-001-site9.ntempurl.com/products"
         );
 
         if (!response.ok) {
