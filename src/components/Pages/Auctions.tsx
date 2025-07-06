@@ -123,7 +123,7 @@ export default function Auctions({ onNavigate }: AuctionsProps) {
   const auctionStats = [
     {
       icon: TrendingUp,
-      number: "156",
+      number: auctionItems.length,
       label: "Live Auctions",
       color: "from-green-400 to-emerald-500",
       bgColor: "bg-green-50",
