@@ -135,7 +135,7 @@ export default function AuctionDetail({
       try {
         setLoading(true);
         const response = await fetch(
-          `https://localhost:7207/auctions/` + auctionId
+          `https://seregamars-001-site9.ntempurl.com/auctions/` + auctionId
         );
 
         if (!response.ok) {
