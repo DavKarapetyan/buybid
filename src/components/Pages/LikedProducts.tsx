@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { PageType } from "../../types";
 import ProductCard from "../Products/ProductCard";
+import { useAuth } from "../Auth/AuthContext";
 
 interface Product {
   id: number;
@@ -56,6 +57,7 @@ export default function LikedProducts({ onNavigate }: LikedProductsProps) {
   const [showBulkActions, setShowBulkActions] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const { user } = useAuth();
 
   // Fetch liked products from API
   React.useEffect(() => {
@@ -65,7 +67,7 @@ export default function LikedProducts({ onNavigate }: LikedProductsProps) {
         setError(null);
 
         const response = await fetch(
-          "https://seregamars-001-site9.ntempurl.com/user/c5b383d4-bb2a-4690-83d9-3063daa4a395"
+          "https://seregamars-001-site9.ntempurl.com/user/" + user?.id
         );
 
         if (!response.ok) {
